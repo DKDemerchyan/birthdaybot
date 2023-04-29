@@ -1,9 +1,10 @@
-[ru](#Telegram-бот для дней рождения)
+[ru](#Telegram-бот)
 
-[arm](#Telegram-bot test)
+[arm](#bob)
+
 [eng](#GAV)
 
-# Telegram-бот для дней рождения
+
 
 ### 
 
@@ -14,27 +15,7 @@ Telegram bot for collecting money for employees' birthdays
 
 f
 
-f
-
-f
-
-f
-
-
-f
-
-f
-
-
-f
-
-f
-
-
-
-f
-f
-
+# Telegram-бот
 
 f
 
@@ -47,6 +28,24 @@ f
 
 f
 
+
+f
+
+f
+
+
+
+f
+f
+
+
+f
+
+f
+
+f
+
+
 f
 
 f
@@ -64,6 +63,10 @@ f
 f
 
 f
+
+f
+
+f
 f
 
 
@@ -74,7 +77,7 @@ f
 
 
 
-# Telegram-bot test
+# bob
 
 f
 
