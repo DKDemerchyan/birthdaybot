@@ -3,7 +3,7 @@ import os
 import sqlite3
 import threading
 import time
-# dsd
+
 import schedule
 from dotenv import load_dotenv
 from telebot import TeleBot
@@ -98,38 +98,46 @@ def delete_info(message):
 
 @bot.message_handler(regexp='^У|удалить')
 def delete_employee(message):
-    data = message.text.split()
-    employee = cur.execute(f'''
-        SELECT name, surname
-        FROM birthdays
-        WHERE id = {int(data[1])};
-    ''')
+    try:
+        data = message.text.split()
+        employee = cur.execute(f'''
+            SELECT name, surname
+            FROM birthdays
+            WHERE id = {int(data[1])};
+        ''')
 
-    for i in employee:
-        employee = i
-    print(employee)
-    cur.execute(f'''
-        DELETE FROM birthdays
-        WHERE id = {int(data[1])};
-    ''')
-    con.commit()
-    bot.send_message(message.chat.id,
-                     f'Удалил сотрудника {" ".join(employee)}')
+        for i in employee:
+            employee = i
+        print(employee)
+        cur.execute(f'''
+            DELETE FROM birthdays
+            WHERE id = {int(data[1])};
+        ''')
+        con.commit()
+        bot.send_message(message.chat.id,
+                         f'Удалил сотрудника {" ".join(employee)}')
+    except sqlite3.OperationalError:
+        bot.send_message(message.chat.id, 'Я не нашел такого сотрудника '
+                                          'в таблице')
 
 
 @bot.message_handler(commands=['table'])
 def send_table(message):
-    table = cur.execute(f'''
-        SELECT *
-        FROM birthdays
-        ORDER BY surname;
-    ''')
-    result = 'ID Имя Фамилия Телеграм Число Месяц \n\n'
-    for employee in table:
-        for data in employee:
-            result += str(data) + ' '
-        result += '\n'
-    bot.send_message(message.chat.id, result)
+    try:
+        table = cur.execute(f'''
+            SELECT *
+            FROM birthdays
+            ORDER BY surname;
+        ''')
+        result = 'ID Имя Фамилия Телеграм Число Месяц \n\n'
+        for employee in table:
+            for data in employee:
+                result += str(data) + ' '
+            result += '\n'
+        bot.send_message(message.chat.id, result)
+    except sqlite3.OperationalError:
+        bot.send_message(message.chat.id, 'Таблица пока пустая, добавь хотя '
+                                          'бы одного сотрудника.')
 
 
 # def notify():
@@ -148,15 +156,18 @@ def send_table(message):
 
 
 def notify2():
-    sec_now = int(time.strftime('%S'))
-    cur.execute(f'''
-            SELECT sec, surname
-            FROM birthdays
-            WHERE sec = {sec_now + 10};
-        ''')
-    for res in cur:
-        if res:
-            bot.send_message(NOTIFY_TO, f'Через 10 сек ДР у {res[1]}')
+    try:
+        sec_now = int(time.strftime('%S'))
+        cur.execute(f'''
+                SELECT sec, surname
+                FROM birthdays
+                WHERE sec = {sec_now + 10};
+            ''')
+        for res in cur:
+            if res:
+                bot.send_message(NOTIFY_TO, f'Через 10 сек ДР у {res[1]}')
+    except sqlite3.OperationalError:
+        pass
 
 
 def notifier():
