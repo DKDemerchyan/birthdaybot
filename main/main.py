@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import os
 import sqlite3
 import threading
@@ -13,40 +13,16 @@ load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 NOTIFY_TO = os.getenv('NOTIFY_TO')
 
+
 con = sqlite3.connect('../database.db', check_same_thread=False)
 cur = con.cursor()
 
 
 bot = TeleBot(BOT_TOKEN)
 
-
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_message(
-        message.chat.id,
-        'Привет, я телеграм-бот. Помогаю нашим сотрудникам не забывать '
-        'про дни рождения друг друга. Меня нужно добавить в чат и рассказать '
-        'мне о всех работниках. \n\n'
-        'Если нужна будет помощь вызывай команду /help.'
-    )
-
-
-@bot.message_handler(commands=['add'])
-def add_info(message):
-    bot.send_message(
-        message.chat.id,
-        'Чтобы добавить нового сотрудника нужно просто написать мне его '
-        'данные в правильном порядке и виде. Напиши мне ключевое слово '
-        '"Добавить" и далее '
-        'данные через один пробел. Если число однозначное не надо добавлять 0 в '
-        'начало. Снизу пример: \n\n'
-        'Добавить Майкл Скотт @telegram_mike 15 Март'
-    )
-
-
-@bot.message_handler(regexp='^Д|добавить')
-def add_employee(message):
-    months = {
+# CONSTANTS:
+YEAR = int(dt.date.today().strftime('%Y'))
+MONTHS = {
         'январь': 1,
         'февраль': 2,
         'март': 3,
@@ -61,29 +37,59 @@ def add_employee(message):
         'декабрь': 12,
     }
 
-    data = message.text.split()
 
-    if data[5].lower() not in months:
-        bot.send_message(message.chat.id, 'Проверь, пожалуйста, месяц и '
-                                          'попробуй заново.')
-    else:
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(
+        message.chat.id,
+        'Привет, я телеграм-бот. Помогаю нашим сотрудникам не забывать '
+        'про дни рождения друг друга, а также собирать на подарки. '
+        'Меня нужно добавить в чат и рассказать '
+        'мне о всех работниках. Подробнее обо мне можно почитать'
+        'тут https://github.com/DKDemerchyan/birthdaybot \n\n'
+        'Если нужна инструкция или помощь вызывай команду /help'
+    )
+
+
+@bot.message_handler(commands=['help'])
+def help_func(message):
+    ...
+
+
+@bot.message_handler(commands=['add'])
+def add_info(message):
+    bot.send_message(
+        message.chat.id,
+        'Чтобы добавить нового сотрудника нужно просто написать мне его '
+        'данные в правильном порядке и виде. Напиши мне ключевое слово '
+        '"Добавить" и далее данные через один пробел. Снизу пример: \n\n'
+        'Добавить Майкл Скотт @telegram_mike 15.03'
+    )
+
+
+@bot.message_handler(regexp='^Д|добавить')
+def add_employee(message):
+    data = message.text.split()
+    date = data[4].split('.')
+    date = dt.date(YEAR, int(date[1]), int(date[0])).strftime('%d.%m')
+    try:
         cur.executescript(f'''
             CREATE TABLE IF NOT EXISTS birthdays(
                 id INTEGER PRIMARY KEY,
                 name TEXT,
                 surname TEXT,
                 tg_name TEXT,
-                day INTEGER,
-                month INTEGER
+                date TEXT
             );
-
-            INSERT INTO birthdays(name, surname, tg_name, day, month)
-            VALUES ('{data[1]}', '{data[2]}', '{data[3]}',
-                    {int(data[4])}, {months[data[5].lower()]});
+    
+            INSERT INTO birthdays(name, surname, tg_name, date)
+            VALUES ('{data[1]}', '{data[2]}', '{data[3]}', '{date}');
         ''')
         con.commit()
-        bot.send_message(message.chat.id, 'Я добавил в таблицу. Посмотреть ее '
+        bot.send_message(message.chat.id, 'Добавил в таблицу. Посмотреть ее '
                                           'можно вызовом /table')
+    except sqlite3.OperationalError:
+        bot.send_message(message.chat.id, 'Что-то не так с введенными данными')
 
 
 @bot.message_handler(commands=['delete'])
@@ -100,15 +106,13 @@ def delete_info(message):
 def delete_employee(message):
     try:
         data = message.text.split()
-        employee = cur.execute(f'''
+        cur.execute(f'''
             SELECT name, surname
             FROM birthdays
             WHERE id = {int(data[1])};
         ''')
 
-        for i in employee:
-            employee = i
-        print(employee)
+        employee = cur.fetchone()
         cur.execute(f'''
             DELETE FROM birthdays
             WHERE id = {int(data[1])};
@@ -129,7 +133,7 @@ def send_table(message):
             FROM birthdays
             ORDER BY surname;
         ''')
-        result = 'ID Имя Фамилия Телеграм Число Месяц \n\n'
+        result = 'ID Имя Фамилия Телеграм Дата рождения \n\n'
         for employee in table:
             for data in employee:
                 result += str(data) + ' '
@@ -140,38 +144,23 @@ def send_table(message):
                                           'бы одного сотрудника.')
 
 
-# def notify():
-#     today = datetime.date.today()
-#     day = int(str(today).split('-')[2])
-#     month = int(str(today).split('-')[1])
-#
-#     cur.execute(f'''
-#         SELECT name, surname, tg_name
-#         FROM birthdays
-#         WHERE day = {day + 1} AND month = {month};
-#     ''')
-#
-#     for x in cur:
-#         print(x)
+def notify():
+    after_tomorrow = (dt.date.today() + dt.timedelta(days=2)).strftime('%d.%m')
 
-
-def notify2():
-    try:
-        sec_now = int(time.strftime('%S'))
-        cur.execute(f'''
-                SELECT sec, surname
-                FROM birthdays
-                WHERE sec = {sec_now + 10};
-            ''')
-        for res in cur:
-            if res:
-                bot.send_message(NOTIFY_TO, f'Через 10 сек ДР у {res[1]}')
-    except sqlite3.OperationalError:
-        pass
+    cur.execute(f'''
+        SELECT name, surname, tg_name
+        FROM birthdays
+        WHERE date = {after_tomorrow};
+    ''')
+    employee = cur.fetchone()
+    if employee:
+        bot.send_message(NOTIFY_TO, f'Всем привет послезавтра свой день'
+                                    f' рождения празднует {employee[0]} '
+                                    f'{employee[1]} {employee[2]}')
 
 
 def notifier():
-    schedule.every(1).second.do(notify2)
+    schedule.every(5).second.do(notify)
     while True:
         schedule.run_pending()
         time.sleep(1)
