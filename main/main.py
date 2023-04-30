@@ -13,29 +13,27 @@ load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 NOTIFY_TO = os.getenv('NOTIFY_TO')
 
-
 con = sqlite3.connect('../database.db', check_same_thread=False)
 cur = con.cursor()
-
 
 bot = TeleBot(BOT_TOKEN)
 
 # CONSTANTS:
 YEAR = int(dt.date.today().strftime('%Y'))
 MONTHS = {
-        'январь': 1,
-        'февраль': 2,
-        'март': 3,
-        'апрель': 4,
-        'май': 5,
-        'июнь': 6,
-        'июль': 7,
-        'август': 8,
-        'сентябрь': 9,
-        'октябрь': 10,
-        'ноябрь': 11,
-        'декабрь': 12,
-    }
+    'январь': 1,
+    'февраль': 2,
+    'март': 3,
+    'апрель': 4,
+    'май': 5,
+    'июнь': 6,
+    'июль': 7,
+    'август': 8,
+    'сентябрь': 9,
+    'октябрь': 10,
+    'ноябрь': 11,
+    'декабрь': 12,
+}
 
 
 @bot.message_handler(commands=['start'])
@@ -81,7 +79,7 @@ def add_employee(message):
                 tg_name TEXT,
                 date TEXT
             );
-    
+
             INSERT INTO birthdays(name, surname, tg_name, date)
             VALUES ('{data[1]}', '{data[2]}', '{data[3]}', '{date}');
         ''')
