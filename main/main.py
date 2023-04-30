@@ -3,7 +3,7 @@ import os
 import sqlite3
 import threading
 import time
-#
+# dsd
 import schedule
 from dotenv import load_dotenv
 from telebot import TeleBot
