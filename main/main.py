@@ -20,6 +20,7 @@ bot = TeleBot(BOT_TOKEN)
 
 # CONSTANTS:
 YEAR = int(dt.date.today().strftime('%Y'))
+BASE_DONAT = 500
 
 
 @bot.message_handler(commands=['start'])
@@ -125,20 +126,33 @@ def send_table(message):
                                           'бы одного сотрудника.')
 
 
-def set_bot_commands(donation_commands):
-    print(donation_commands)
-    commands_list = [
+@bot.message_handler(regexp='^/donate')
+def register_donate(message):
+    print(message)
+    table_name = message.text.split('@')[0][8:]
+    print(table_name)
+    cur.execute(f'''
+        INSERT INTO fund_{table_name}(name, surname, username, amount)
+        VALUES ('{message.from_user.first_name}',
+                '{message.from_user.last_name}',
+                '{message.from_user.username}',
+                '{BASE_DONAT}');
+    ''')
+
+
+def set_bot_commands(donation_commands):    # ВЫВЕСТИ GENERAL_COMMANDS LIST В КОНСТАНТУ
+    general_commands_list = [
         types.BotCommand('/start', 'Запустить бота'),
         types.BotCommand('/help', 'Помощь'),
         types.BotCommand('/table', 'Таблица сотрудников')
     ]
-    commands_list.extend(donation_commands)
-    bot.set_my_commands(commands_list)
-    return bot.get_my_commands()
+    donation_commands.extend(general_commands_list)
+    bot.set_my_commands(donation_commands)
 
 
 def create_money_table(username):
     creation_date = dt.date.today().strftime('%d.%m')
+    print('creation_date', creation_date)
     cur.executescript(f'''
         CREATE TABLE IF NOT EXISTS fund_{username}(
                 id INTEGER PRIMARY KEY,
@@ -149,8 +163,8 @@ def create_money_table(username):
                 table_date TEXT
             );
 
-        INSERT INTO fund_{username}(table_date)
-        VALUES ({creation_date});
+        INSERT INTO fund_{username}(username, table_date)
+        VALUES ('donate_{username}', '{creation_date}');
     ''')
     con.commit()
 
@@ -158,8 +172,6 @@ def create_money_table(username):
 def notify():
     """Функция уведомления в группе о дне рождения коллеги."""
     after_tomorrow = (dt.date.today() + dt.timedelta(days=2)).strftime('%d.%m')
-    print('Это в notify', after_tomorrow)
-
     try:
         cur.execute(f'''
             SELECT name, surname, username
@@ -171,14 +183,13 @@ def notify():
             donate_commands = []
             for employee in employees:
                 donate_commands.append(
-                    types.BotCommand(f'/donate{employee[2]}',
+                    types.BotCommand(f'/donate_{employee[2]}',
                                      f'Донат для {employee[2]}')
                 )
                 create_money_table(employee[2])
                 bot.send_message(GROUP_CHAT, f'Всем привет послезавтра свой день'
                                              f' рождения празднует {employee[0]} '
                                              f'{employee[1]} {employee[2]}')
-            print(donate_commands)
             set_bot_commands(donate_commands)
     except sqlite3.OperationalError:
         pass
