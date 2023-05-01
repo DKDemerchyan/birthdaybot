@@ -1,3 +1,5 @@
+### Alpha version 3.0
+
 [ [eng](#Telegram-bot-for-employees-birthdays) / 
   [rus](#Телеграм-бот-для-дней-рождения-сотрудников) ]
 
