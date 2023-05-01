@@ -6,7 +6,7 @@ import time
 
 import schedule
 from dotenv import load_dotenv
-from telebot import TeleBot
+from telebot import TeleBot, types
 
 load_dotenv()
 
@@ -43,13 +43,14 @@ def help_func(message):
         message.chat.id,
         'Чтобы добавить нового сотрудника нужно просто написать мне его '
         'данные в правильном порядке и виде. Напиши мне ключевое слово '
-        '"Добавить" и далее данные через один пробел. Снизу пример: \n\n'
-        'Добавить Майкл Скотт @telegram_mike 15.03'
-        '\n____________________________________________________________ \n'
+        '"Добавить" и далее данные через один пробел. \n'
+        '>>> Добавить Майкл Скотт @telegram_mike 15.03'
+        '\n ____________________________ \n'
         'Чтобы удалить сотрудника из списка необходимо написать ключевое '
         'слово "Удалить" и далее ID сотрудника. \n\n'
-        'Удалить 6 \n\n'
+        '>>> Удалить 6 \n\n'
         'ID можно узнать по команде /table'
+        '\n ____________________________ \n'
     )
 
 
@@ -124,9 +125,20 @@ def send_table(message):
                                           'бы одного сотрудника.')
 
 
+def set_bot_commands(donation_commands):
+    print(donation_commands)
+    commands_list = [
+        types.BotCommand('/start', 'Запустить бота'),
+        types.BotCommand('/help', 'Помощь'),
+        types.BotCommand('/table', 'Таблица сотрудников')
+    ]
+    commands_list.extend(donation_commands)
+    bot.set_my_commands(commands_list)
+    return bot.get_my_commands()
+
+
 def create_money_table(username):
     creation_date = dt.date.today().strftime('%d.%m')
-    print(creation_date)
     cur.executescript(f'''
         CREATE TABLE IF NOT EXISTS fund_{username}(
                 id INTEGER PRIMARY KEY,
@@ -155,41 +167,27 @@ def notify():
             WHERE birth_date = '{after_tomorrow}';
         ''')
         employees = cur.fetchall()
-        print('SSS')
-        print(employees)
-        print(len(employees))
         if employees:
+            donate_commands = []
             for employee in employees:
+                donate_commands.append(
+                    types.BotCommand(f'/donate{employee[2]}',
+                                     f'Донат для {employee[2]}')
+                )
                 create_money_table(employee[2])
                 bot.send_message(GROUP_CHAT, f'Всем привет послезавтра свой день'
                                              f' рождения празднует {employee[0]} '
                                              f'{employee[1]} {employee[2]}')
-            if len(employees) > 1:
-                bot.send_message(GROUP_CHAT,
-                                 'Чтобы не путать бота (меня) во взносах, '
-                                 'пожалуйста, пишите сумму и имя именинника. \n\n'
-                                 'Вот так: 500 Джим')
+            print(donate_commands)
+            set_bot_commands(donate_commands)
     except sqlite3.OperationalError:
         pass
-
-
-# @bot.message_handler(commands=['donate'])
-# def accept_donation(message):
-
-
-
-# @bot.message_handler(regexp='[0-9]')
-# def test_func(message):
-#     print(message)
-#     bot.delete_message(chat_id=message.chat.id,
-#                        message_id=message.id,
-#                        timeout=10)
 
 
 def notifier():
     """Функция настройки расписания проверки предстоящих дней рождения"""
     #  schedule.every().day.at('10:30').do(notify)
-    schedule.every(10).seconds.do(notify)
+    schedule.every(5).seconds.do(notify)
     while True:
         schedule.run_pending()
         time.sleep(1)
