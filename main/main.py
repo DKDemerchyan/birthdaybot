@@ -1,29 +1,18 @@
 import datetime as dt
-import os
 import sqlite3
 import threading
-import messages
-from dotenv import load_dotenv
-from telebot import TeleBot
-from notifier import Notifier
+from settings import bot, start_message, help_message, cur, con, BASE_DONAT
 
-load_dotenv()
-BOT_TOKEN = os.getenv('BOT_TOKEN')
-GROUP_CHAT = os.getenv('GROUP_CHAT')
-BASE_DONAT = 500
-
-con = sqlite3.connect('../database.db', check_same_thread=False)
-cur = con.cursor()
-bot = TeleBot(BOT_TOKEN)
+from notify_logic import Notifier
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
     """Функция старта бота."""
-    Notifier.set_bot_commands([])
+    Notifier.set_bot_commands(self=Notifier, donation_commands=[])
     bot.send_message(
         message.chat.id,
-        messages.start_message
+        start_message
     )
 
 
@@ -32,7 +21,7 @@ def help_function(message):
     """Функция вызова инструкций бота."""
     bot.send_message(
         message.chat.id,
-        messages.help_message
+        help_message
     )
 
 
@@ -109,11 +98,8 @@ def send_table(message):
 
 @bot.message_handler(regexp='^/donate', chat_types='group')
 def register_donate(message):
-    print(message)
     table_name = message.text.split('@')[0][8:]
-    print(table_name)
     table_name = 'fund_' + table_name
-    print(table_name)
     cur.execute(f'''
         INSERT INTO {table_name}(name, surname, username, amount)
         VALUES ('{message.from_user.first_name}',
@@ -125,6 +111,7 @@ def register_donate(message):
 
 
 if __name__ == '__main__':
-    notifier = threading.Thread(target=Notifier.notifier)
+    n = Notifier()
+    notifier = threading.Thread(target=n.notify_scheduler)
     notifier.start()
     bot.polling()

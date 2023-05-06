@@ -1,3 +1,19 @@
+import os
+import sqlite3
+
+from dotenv import load_dotenv
+import telebot
+
+load_dotenv()
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+GROUP_CHAT = os.getenv('GROUP_CHAT')
+BASE_DONAT = 500
+
+con = sqlite3.connect('../database.db', check_same_thread=False)
+cur = con.cursor()
+bot = telebot.TeleBot(BOT_TOKEN)
+
+
 start_message = (
     'Привет, я телеграм-бот. Помогаю нашим сотрудникам не забывать '
     'про дни рождения друг друга, а также собирать на подарки. '

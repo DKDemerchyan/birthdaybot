@@ -1,38 +1,29 @@
 import datetime as dt
-import os
 import sqlite3
 import time
 
 import schedule
-from dotenv import load_dotenv
-from telebot import TeleBot, types
-
-load_dotenv()
-
-BOT_TOKEN = os.getenv('BOT_TOKEN')
-GROUP_CHAT = os.getenv('GROUP_CHAT')
-
-con = sqlite3.connect('../database.db', check_same_thread=False)
-cur = con.cursor()
-
-bot = TeleBot(BOT_TOKEN)
+from telebot import types
+from settings import bot, GROUP_CHAT, cur, con
 
 
 class Notifier:
+    """Класс Notifier используется для работы с ругелярными действиями бота.
+    Устанавливает команды, создает/удаляет таблицы, управляет уведомлениями."""
 
-    @staticmethod
-    def set_bot_commands(donation_commands):
+    general_commands_list = [
+        types.BotCommand('/start', 'Запустить бота'),
+        types.BotCommand('/help', 'Помощь'),
+        types.BotCommand('/table', 'Таблица сотрудников')
+    ]
+
+    def set_bot_commands(self, donation_commands):
         """Функция при вызове устанавливает боту команды.
 
         - Принимает команды донатов, создающиеся в notify()
         - К стандартным командам добавляет команды для донатов
         """
-        general_commands_list = [
-            types.BotCommand('/start', 'Запустить бота'),
-            types.BotCommand('/help', 'Помощь'),
-            types.BotCommand('/table', 'Таблица сотрудников')
-        ]
-        donation_commands.extend(general_commands_list)
+        donation_commands.extend(self.general_commands_list)
         bot.set_my_commands(donation_commands)
 
     @staticmethod
@@ -119,9 +110,8 @@ class Notifier:
         except sqlite3.OperationalError:
             pass
 
-    def notifier(self):
+    def notify_scheduler(self):
         """Функция настройки расписания проверки предстоящих дней рождения"""
-        # schedule.every().day.at('10:30').do(notify)
         schedule.every(60).seconds.do(self.notify)
         schedule.every().day.at('14:00').do(self.delete_money_table)
         while True:
