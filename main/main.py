@@ -2,55 +2,37 @@ import datetime as dt
 import os
 import sqlite3
 import threading
-
+import messages
 from dotenv import load_dotenv
 from telebot import TeleBot
 from notifier import notifier, set_bot_commands
 
 load_dotenv()
-
-BOT_TOKEN = "6001565240:AAFoXV2rz1UrHylQIdPiDN3nSFsMunipkm0"
-GROUP_CHAT = -910921670
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+GROUP_CHAT = os.getenv('GROUP_CHAT')
+BASE_DONAT = 500
 
 con = sqlite3.connect('../database.db', check_same_thread=False)
 cur = con.cursor()
-
 bot = TeleBot(BOT_TOKEN)
-
-# CONSTANTS:
-YEAR = int(dt.date.today().strftime('%Y'))
-BASE_DONAT = 500
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    """Функция стартующая при первом запуске бота."""
-    set_bot_commands()
+    """Функция старта бота."""
+    set_bot_commands([])
     bot.send_message(
         message.chat.id,
-        'Привет, я телеграм-бот. Помогаю нашим сотрудникам не забывать '
-        'про дни рождения друг друга, а также собирать на подарки. '
-        'Меня нужно добавить в чат и рассказать '
-        'мне о всех работниках. Подробнее обо мне можно почитать'
-        'тут https://github.com/DKDemerchyan/birthdaybot \n\n'
-        'Если нужна инструкция или помощь вызывай команду /help'
+        messages.start_message
     )
 
 
 @bot.message_handler(commands=['help'])
-def help_func(message):
+def help_function(message):
     """Функция вызова инструкций бота."""
     bot.send_message(
         message.chat.id,
-        'Чтобы добавить нового сотрудника нужно просто написать мне его '
-        'данные в правильном порядке и виде. Напиши мне ключевое слово '
-        '"Добавить" и далее данные через один пробел. \n'
-        '>>> Добавить Майкл Скотт @telegram_mike 15.03'
-        '\n ____________________________ \n\n'
-        'Чтобы удалить сотрудника из списка необходимо написать ключевое '
-        'слово "Удалить" и далее ID сотрудника. \n\n'
-        '>>> Удалить 6 \n\n'
-        'ID можно узнать по команде /table'
+        messages.help_message
     )
 
 
@@ -59,7 +41,8 @@ def add_employee(message):
     """Функция добавления нового сотрудника в базу данных."""
     data = message.text.split()
     date = data[4].split('.')
-    date = dt.date(YEAR, int(date[1]), int(date[0])).strftime('%d.%m')
+    year = int(dt.date.today().strftime('%Y'))
+    date = dt.date(year, int(date[1]), int(date[0])).strftime('%d.%m')
     try:
         cur.executescript(f'''
             CREATE TABLE IF NOT EXISTS birthdays(
@@ -124,18 +107,21 @@ def send_table(message):
                                           'бы одного сотрудника.')
 
 
-@bot.message_handler(regexp='^/donate')
+@bot.message_handler(regexp='^/donate', chat_types='group')
 def register_donate(message):
     print(message)
     table_name = message.text.split('@')[0][8:]
     print(table_name)
+    table_name = 'fund_' + table_name
+    print(table_name)
     cur.execute(f'''
-        INSERT INTO fund_{table_name}(name, surname, username, amount)
+        INSERT INTO {table_name}(name, surname, username, amount)
         VALUES ('{message.from_user.first_name}',
                 '{message.from_user.last_name}',
                 '{message.from_user.username}',
                 '{BASE_DONAT}');
     ''')
+    con.commit()
 
 
 if __name__ == '__main__':
