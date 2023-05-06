@@ -9,7 +9,7 @@ from notifier import notifier, set_bot_commands
 
 load_dotenv()
 
-BOT_TOKEN = '6001565240:AAFoXV2rz1UrHylQIdPiDN3nSFsMunipkm0'
+BOT_TOKEN = "6001565240:AAFoXV2rz1UrHylQIdPiDN3nSFsMunipkm0"
 GROUP_CHAT = -910921670
 
 con = sqlite3.connect('../database.db', check_same_thread=False)
