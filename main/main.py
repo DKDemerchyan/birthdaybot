@@ -5,7 +5,7 @@ import threading
 import messages
 from dotenv import load_dotenv
 from telebot import TeleBot
-from notifier import notifier, set_bot_commands
+from notifier import Notifier
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -20,7 +20,7 @@ bot = TeleBot(BOT_TOKEN)
 @bot.message_handler(commands=['start'])
 def start(message):
     """Функция старта бота."""
-    set_bot_commands([])
+    Notifier.set_bot_commands([])
     bot.send_message(
         message.chat.id,
         messages.start_message
@@ -125,6 +125,6 @@ def register_donate(message):
 
 
 if __name__ == '__main__':
-    notifier = threading.Thread(target=notifier)
+    notifier = threading.Thread(target=Notifier.notifier)
     notifier.start()
     bot.polling()
