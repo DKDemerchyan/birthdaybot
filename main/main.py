@@ -2,11 +2,10 @@ import datetime as dt
 import os
 import sqlite3
 import threading
-import time
 
-import schedule
 from dotenv import load_dotenv
-from telebot import TeleBot, types
+from telebot import TeleBot
+from notifier import notifier, set_bot_commands
 
 load_dotenv()
 
@@ -26,6 +25,7 @@ BASE_DONAT = 500
 @bot.message_handler(commands=['start'])
 def start(message):
     """Функция стартующая при первом запуске бота."""
+    set_bot_commands()
     bot.send_message(
         message.chat.id,
         'Привет, я телеграм-бот. Помогаю нашим сотрудникам не забывать '
@@ -46,12 +46,11 @@ def help_func(message):
         'данные в правильном порядке и виде. Напиши мне ключевое слово '
         '"Добавить" и далее данные через один пробел. \n'
         '>>> Добавить Майкл Скотт @telegram_mike 15.03'
-        '\n ____________________________ \n'
+        '\n ____________________________ \n\n'
         'Чтобы удалить сотрудника из списка необходимо написать ключевое '
         'слово "Удалить" и далее ID сотрудника. \n\n'
         '>>> Удалить 6 \n\n'
         'ID можно узнать по команде /table'
-        '\n ____________________________ \n'
     )
 
 
@@ -115,7 +114,7 @@ def send_table(message):
             FROM birthdays
             ORDER BY surname;
         ''')
-        result = 'ID Имя Фамилия Телеграм Дата рождения \n\n'
+        result = 'ID | Имя Фамилия | Телеграм | Дата рождения \n\n'
         for employee in table:
             for data in employee:
                 result += str(data) + ' '
@@ -138,100 +137,6 @@ def register_donate(message):
                 '{message.from_user.username}',
                 '{BASE_DONAT}');
     ''')
-
-
-def set_bot_commands(donation_commands):    # ВЫВЕСТИ GENERAL_COMMANDS LIST В КОНСТАНТУ
-    general_commands_list = [
-        types.BotCommand('/start', 'Запустить бота'),
-        types.BotCommand('/help', 'Помощь'),
-        types.BotCommand('/table', 'Таблица сотрудников')
-    ]
-    donation_commands.extend(general_commands_list)
-    bot.set_my_commands(donation_commands)
-
-
-def create_money_table(username):
-    creation_date = dt.date.today().strftime('%d.%m.%Y')
-    print('creation_date', creation_date)
-    cur.executescript(f'''
-        CREATE TABLE IF NOT EXISTS fund_{username}(
-                id INTEGER PRIMARY KEY,
-                name TEXT,
-                surname TEXT,
-                username TEXT,
-                amount TEXT,
-                table_date TEXT
-            );
-
-        INSERT INTO fund_{username}(username, table_date)
-        VALUES ('donate_{username}', '{creation_date}');
-    ''')
-    con.commit()
-
-
-def delete_money_table():
-    """Функция для удаления старых таблиц.
-
-    - Из всех таблиц выберет связанные со сборами.
-    - Проверит дату создания и удалит, если она старше 180 дней
-    """
-    cur.execute(f'''
-        SELECT tbl_name
-        FROM sqlite_master
-        WHERE tbl_name LIKE 'fund%';
-    ''')
-    funds = cur.fetchall()
-    for fund in funds:
-        cur.execute(f'''
-            SELECT table_date
-            FROM {fund[0]}
-            WHERE id = 1;
-        ''')
-        table_date = cur.fetchone()[0].split('.')
-        table_date = dt.date(int(table_date[2]), int(table_date[1]),
-                             int(table_date[0]))
-        if table_date < dt.date.today() - dt.timedelta(days=180):
-            print('Дропаю', fund[0])
-            cur.execute(f'''
-                DROP TABLE {fund[0]};
-            ''')
-            con.commit()
-
-
-def notify():
-    """Функция уведомления в группе о дне рождения коллеги."""
-    after_tomorrow = (dt.date.today() + dt.timedelta(days=1)).strftime('%d.%m')
-    try:
-        cur.execute(f'''
-            SELECT name, surname, username
-            FROM birthdays
-            WHERE birth_date = '{after_tomorrow}';
-        ''')
-        employees = cur.fetchall()
-        if employees:
-            donate_commands = []
-            for employee in employees:
-                donate_commands.append(
-                    types.BotCommand(f'/donate_{employee[2]}',
-                                     f'Донат для {employee[2]}')
-                )
-                create_money_table(employee[2])
-                bot.send_message(GROUP_CHAT, f'Всем привет послезавтра свой день'
-                                             f' рождения празднует {employee[0]} '
-                                             f'{employee[1]} {employee[2]}')
-            set_bot_commands(donate_commands)
-    except sqlite3.OperationalError:
-        pass
-
-
-def notifier():
-    """Функция настройки расписания проверки предстоящих дней рождения"""
-    #  schedule.every().day.at('10:30').do(notify)
-    schedule.every(50).seconds.do(notify)
-    schedule.every(10).seconds.do(delete_money_table)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
 
 
 if __name__ == '__main__':
