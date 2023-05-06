@@ -151,7 +151,7 @@ def set_bot_commands(donation_commands):    # ВЫВЕСТИ GENERAL_COMMANDS LI
 
 
 def create_money_table(username):
-    creation_date = dt.date.today().strftime('%d.%m')
+    creation_date = dt.date.today().strftime('%d.%m.%Y')
     print('creation_date', creation_date)
     cur.executescript(f'''
         CREATE TABLE IF NOT EXISTS fund_{username}(
@@ -169,9 +169,38 @@ def create_money_table(username):
     con.commit()
 
 
+def delete_money_table():
+    """Функция для удаления старых таблиц.
+
+    - Из всех таблиц выберет связанные со сборами.
+    - Проверит дату создания и удалит, если она старше 180 дней
+    """
+    cur.execute(f'''
+        SELECT tbl_name
+        FROM sqlite_master
+        WHERE tbl_name LIKE 'fund%';
+    ''')
+    funds = cur.fetchall()
+    for fund in funds:
+        cur.execute(f'''
+            SELECT table_date
+            FROM {fund[0]}
+            WHERE id = 1;
+        ''')
+        table_date = cur.fetchone()[0].split('.')
+        table_date = dt.date(int(table_date[2]), int(table_date[1]),
+                             int(table_date[0]))
+        if table_date < dt.date.today() - dt.timedelta(days=180):
+            print('Дропаю', fund[0])
+            cur.execute(f'''
+                DROP TABLE {fund[0]};
+            ''')
+            con.commit()
+
+
 def notify():
     """Функция уведомления в группе о дне рождения коллеги."""
-    after_tomorrow = (dt.date.today() + dt.timedelta(days=2)).strftime('%d.%m')
+    after_tomorrow = (dt.date.today() + dt.timedelta(days=1)).strftime('%d.%m')
     try:
         cur.execute(f'''
             SELECT name, surname, username
@@ -198,7 +227,8 @@ def notify():
 def notifier():
     """Функция настройки расписания проверки предстоящих дней рождения"""
     #  schedule.every().day.at('10:30').do(notify)
-    schedule.every(5).seconds.do(notify)
+    schedule.every(50).seconds.do(notify)
+    schedule.every(10).seconds.do(delete_money_table)
     while True:
         schedule.run_pending()
         time.sleep(1)
