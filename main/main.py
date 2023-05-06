@@ -60,7 +60,6 @@ def add_employee(message):
     data = message.text.split()
     date = data[4].split('.')
     date = dt.date(YEAR, int(date[1]), int(date[0])).strftime('%d.%m')
-    print('Это add_employee', date)
     try:
         cur.executescript(f'''
             CREATE TABLE IF NOT EXISTS birthdays(
