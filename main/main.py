@@ -1,8 +1,9 @@
 import datetime as dt
 import sqlite3
 import threading
-from settings import bot, start_message, help_message, cur, con, BASE_DONAT
+
 from notify_logic import Notifier
+from settings import bot, con, cur, help_message, start_message
 
 
 @bot.message_handler(commands=['start'], chat_types='private')
@@ -79,7 +80,7 @@ def delete_employee(message):
 def send_table(message):
     """Функция вывода всех сотрудников из базы данных."""
     try:
-        table = cur.execute(f'''
+        table = cur.execute('''
             SELECT *
             FROM birthdays
             ORDER BY surname;

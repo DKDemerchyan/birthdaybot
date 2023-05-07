@@ -3,8 +3,8 @@ import sqlite3
 import time
 
 import schedule
+from settings import BASE_DONAT, GROUP_CHAT, bot, con, cur
 from telebot import types
-from settings import bot, GROUP_CHAT, cur, con, BASE_DONAT
 
 
 class Notifier:
@@ -51,7 +51,7 @@ class Notifier:
         - Из всех таблиц выберет связанные со сборами.
         - Проверит дату создания и удалит, если она старше 180 дней
         """
-        cur.execute(f'''
+        cur.execute('''
             SELECT tbl_name
             FROM sqlite_master
             WHERE tbl_name LIKE 'fund%';
