@@ -106,9 +106,12 @@ class Notifier:
             pass
 
     def notify_scheduler(self):
-        """Функция настройки расписания проверки предстоящих дней рождения"""
-        schedule.every(500).seconds.do(self.notify)
-        # schedule.every(10).seconds.do(self.delete_money_table)
+        """Функция настройки расписания регулярных действий.
+
+        - Проверяет есть ли завтра день рождения.
+        - Проверяет есть ли старые таблицы на удаление.
+        """
+        schedule.every().day.at('8:00').do(self.notify)
         schedule.every().sunday.at('21:00').do(self.delete_money_table)
         while True:
             schedule.run_pending()

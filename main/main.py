@@ -53,7 +53,8 @@ def add_employee(message):
 def delete_employee(message):
     """Функция удаления сотрудника из базы данных.
 
-    - Принимает ID из таблицы birthdays
+    - Принимает ID из таблицы birthdays.
+    - Удаляет по нему и сообщает об операции пользователю.
     """
     try:
         id_employee = int(message.text.split()[1])
@@ -97,7 +98,12 @@ def send_table(message):
 
 @bot.message_handler(regexp='ДР|др [0-9]', chat_types='private')
 def show_donates(message):
-    """Функция показа донатов сотруднику по его ID."""
+    """Функция показа донатов сотруднику по его ID.
+
+    - Принимает ID сотрудника.
+    - Находит по нему его username в таблице birthdays.
+    - По username находит нужную таблицу и выводит оттуда все донаты.
+    """
     try:
         id_employee = int(message.text.split()[1])
         username = cur.execute(f'''
@@ -131,12 +137,18 @@ def show_donates(message):
 
 @bot.message_handler(regexp='^/donate_', chat_types='group')
 def register_donate(message):
+    """Функция регистрации донатов в таблицы.
+
+    - Принимает из команды username одариваемого пользователя, чтобы найти
+    его таблицу донатов.
+    - По username дарителя находит его имя и фамилию в таблице birthdays.
+    - Использую данные вносит в нужную таблицу взнос.
+    """
     to_username = message.text.split('@')[0][8:]
-    table_name = 'fund_' + to_username
     table_name = cur.execute(f'''
         SELECT tbl_name
         FROM sqlite_master
-        WHERE tbl_name LIKE '{table_name}%';
+        WHERE tbl_name LIKE 'fund_{to_username}%';
     ''').fetchone()[0]
 
     donater_username = message.from_user.username
