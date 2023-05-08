@@ -1,0 +1,7 @@
+version: '20.10.24'
+
+services:
+
+  birthday_bot:
+    build: .
+    restart: always

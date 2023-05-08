@@ -9,7 +9,7 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 GROUP_CHAT = os.getenv('GROUP_CHAT')
 BASE_DONAT = 500
 
-con = sqlite3.connect('../database.db', check_same_thread=False)
+con = sqlite3.connect('database.db', check_same_thread=False)
 cur = con.cursor()
 bot = telebot.TeleBot(BOT_TOKEN)
 

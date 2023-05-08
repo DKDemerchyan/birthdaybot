@@ -111,7 +111,7 @@ class Notifier:
         - Проверяет есть ли завтра день рождения.
         - Проверяет есть ли старые таблицы на удаление.
         """
-        schedule.every().day.at('8:00').do(self.notify)
+        schedule.every().day.at('08:00').do(self.notify)
         schedule.every().sunday.at('21:00').do(self.delete_money_table)
         while True:
             schedule.run_pending()

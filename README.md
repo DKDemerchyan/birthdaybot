@@ -1,4 +1,4 @@
-### Beta version 1.0
+### Beta version 2.0
 
 - Продумать установку. Клонировать с добавлением .env или форкать и добавлять
 переменные в security в гитхабе
@@ -6,31 +6,66 @@
 [ [eng](#Telegram-bot-for-employees-birthdays) / 
   [rus](#Телеграм-бот-для-дней-рождения-сотрудников) ]
 
-# Telegram-bot for employees' birthdays
+# Telegram bot for employee birthdays
 
-- Bot notifies employees in the chat about the upcoming birthday of a colleague
-- Bot registers the contribution for congratulations
-- Saves data to the database
-- Clears the chat history
-- Adds a new employee to the database
-- Removes a former employee from the database
+- The bot notifies employees in the chat about the upcoming birthday of a colleague.
+- The bot registers a contribution for congratulations.
+- Saves data to the database, allowing you to view directly from private
+messages
+- Adds a new employee to the database.
+- Removes a former employee from the database.
+- Deletes old contribution records.
 
+### Installation
+
+- Fork the repository
+- Clone it to a remote server where the bot will be running
+> git clone <-ssh->
+- Add the ".env" file to the /main folder, add the group chat ID and token of 
+bot
+> BOT_TOKEN = '<bot token received from BotFather>'
+> GROUP_CHAT = <Your group chat ID>
+- Launch the bot with the command:
+> docker-compose up
+
+### Scheme of work
+
+1. Launch the bot, add it to the group and allow messages.
+2. Add employee birthdays to the table via private messages to the bot.
+When adding the first employee, a database and a table with dates
+of birth will be created.
+3. Every day at 8:00, the bot checks the table for upcoming birthdays.
+4. The day before the expected birthday (or days if two or more 
+people's dates coincided) the bot will send a notification to the group chat and add
+a separate table to the database to record contributions to the employee from colleagues.
+5. Simultaneously with the notification, a team or several teams will be added to the chatbot
+to send the contribution.
+6. Users send commands to send a contribution.
+7. The bot registers incoming commands and enters them into the table.
+8. The table can be viewed from personal messages with the bot.
 
 _______________________________________________________________________________
 # Телеграм-бот для дней рождения сотрудников
 
 - Бот уведомляет сотрудников в чате о предстоящем дне рождении коллеги.
 - Бот регистрирует взнос на поздравление.
-- Сохраняет данные в базу данных.
+- Сохраняет данные в базу данных, позволяя просматривать прямо из личных 
+сообщений
 - Добавляет нового сотрудника в БД.
 - Удаляет бывшего сотрудника из БД.
 - Удаляет старые записи о взносах.
 
 ### Установка
 
-- Добавить в корневую папку файл .env, внести в него ID группового чата и токен 
-бота 
-- 
+- Форкните репозиторий
+- Клонируйте его на удаленный сервер, на котором будет запущен бот
+> git clone <-ssh->
+- Добавьте в папку /main файл ".env", внести в него ID группового чата и токен 
+бота
+> BOT_TOKEN = '<токен бота, получаемый из BotFather>'
+> GROUP_CHAT = <ID вашего группового чата>
+- Запустите бота командой:
+> docker-compose up
 
 
 ### Схема работы
