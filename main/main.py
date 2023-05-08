@@ -3,7 +3,7 @@ import sqlite3
 import threading
 
 from notify_logic import Notifier
-from settings import bot, con, cur, help_message, start_message
+from settings import BASE_DONAT, bot, con, cur, help_message, start_message
 
 
 @bot.message_handler(commands=['start'], chat_types='private')
@@ -95,34 +95,62 @@ def send_table(message):
         bot.reply_to(message, 'Таблица пока пустая.')
 
 
-# @bot.message_handler(regexp='ДР|др [0-9]', chat_types='private')
-# def show_donates(message):
-#     """Функция показа донатов сотруднику по его ID."""
-#     id_employee = int(message.text.split()[1])
-#     cur.execute(f'''
-#         SELECT username
-#         FROM birthdays
-#         WHERE id = {id_employee};
-#     ''')
-#     try:
-#         username = cur.fetchone()[0]
-#         print(username)
-#     except TypeError:
-#         bot.reply_to(message, 'Такого ID не существует!')
+@bot.message_handler(regexp='ДР|др [0-9]', chat_types='private')
+def show_donates(message):
+    """Функция показа донатов сотруднику по его ID."""
+    try:
+        id_employee = int(message.text.split()[1])
+        username = cur.execute(f'''
+            SELECT username
+            FROM birthdays
+            WHERE id = {id_employee};
+        ''').fetchone()[0]
+
+        table_name = cur.execute(f'''
+            SELECT tbl_name
+            FROM sqlite_master
+            WHERE tbl_name LIKE 'fund_{username[1:]}%';
+        ''').fetchone()[0]
+
+        table = cur.execute(f'''
+            SELECT name, surname, amount
+            FROM '{table_name}'
+            ORDER BY surname;
+        ''').fetchall()
+
+        result = f'На {username} сдали:\n'
+        for donater in table:
+            for data in donater:
+                result += str(data) + ' '
+            result += '\n'
+        bot.send_message(message.chat.id, result)
+
+    except TypeError:
+        bot.reply_to(message, 'Данных по ID не существует!')
 
 
-# @bot.message_handler(regexp='^/donate', chat_types='group')
-# def register_donate(message):
-#     table_name = message.text.split('@')[0][8:]
-#     table_name = 'fund_' + table_name
-#     cur.execute(f'''
-#         INSERT INTO {table_name}(name, surname, username, amount)
-#         VALUES ('{message.from_user.first_name}',
-#                 '{message.from_user.last_name}',
-#                 '{message.from_user.username}',
-#                 '{BASE_DONAT}');
-#     ''')
-#     con.commit()
+@bot.message_handler(regexp='^/donate_', chat_types='group')
+def register_donate(message):
+    to_username = message.text.split('@')[0][8:]
+    table_name = 'fund_' + to_username
+    table_name = cur.execute(f'''
+        SELECT tbl_name
+        FROM sqlite_master
+        WHERE tbl_name LIKE '{table_name}%';
+    ''').fetchone()[0]
+
+    donater_username = message.from_user.username
+    donater = cur.execute(f'''
+        SELECT name, surname
+        FROM birthdays
+        WHERE username = '@{donater_username}';
+    ''').fetchone()
+
+    cur.execute(f'''
+        INSERT INTO '{table_name}'(name, surname, amount)
+        VALUES ('{donater[0]}', '{donater[1]}', {BASE_DONAT});
+    ''')
+    con.commit()
 
 
 if __name__ == '__main__':
